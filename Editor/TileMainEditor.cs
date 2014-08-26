@@ -24,53 +24,64 @@ public class TileMainEditor : Editor
     private Vector2 scrolepos = Vector2.zero;
     // String for button
     string tilebutton = "Show Tiles";
+    //Check veriable for all bool values
+    public bool checkbool;
     //starts when scene view is enabled
     
     public void OnEnable()
     {
         // Reference to the Tilemain Script
         tilemain = (TileMain)target;
-        // Set the view tool active
-        Tools.current = Tool.View;
-        //FPS tool is selected
-        Tools.viewTool = ViewTool.FPS;
+        tilesize.x = tilemain.PixelSize.x / 100;
+        tilesize.y = tilemain.PixelSize.y / 100;
     }
     //All the work happinning in Scene view
     void OnSceneGUI()
     {
-        //Grab the current event
-        Event e = Event.current;
-        //Raycast from camera to mouse position 
-        Ray r = Camera.current.ScreenPointToRay(new Vector3(e.mousePosition.x, -e.mousePosition.y + Camera.current.pixelHeight));
-        mouseHitPos = r.origin;
-        // checks if mouse is on the gameobject layer
-        if (IsMouseOnLayer())
+        if (tilemain.isdrawmode)
         {
-            //grab the marker position from the mouse position
-            tilemain.MarkerPosition = MouseOnTile();
-            // refresh the sceneview to update all the chenges 
+            //Grab the current event
+            Event e = Event.current;
             if (e.isMouse)
-                SceneView.RepaintAll();
-            //checks which mouse button is clicked and dragged
-            if (e.type == EventType.MouseDown && e.button == 0 || e.type == EventType.MouseDrag && e.button == 0)
             {
-                if(isTilesetDone)
-                Draw();
-                e.Use();
-
+                // Set the view tool active
+                Tools.current = Tool.View;
+                //FPS tool is selected
+                Tools.viewTool = ViewTool.FPS;
             }
-            if (e.type == EventType.MouseDown && e.button == 1 || e.type == EventType.MouseDrag && e.button == 1)
+            //Raycast from camera to mouse position 
+            Ray r = HandleUtility.GUIPointToWorldRay(new Vector2(e.mousePosition.x, e.mousePosition.y));
+            mouseHitPos = r.origin;
+            
+            // checks if mouse is on the gameobject layer
+            if (IsMouseOnLayer())
             {
-                Delete();
-                e.Use();
+                //grab the marker position from the mouse position
+                tilemain.MarkerPosition = MouseOnTile();
+                // refresh the sceneview to update all the chenges 
+                if (e.isMouse)
+                    SceneView.RepaintAll();
+                //checks which mouse button is clicked and dragged
+                if (e.type == EventType.MouseDown && e.button == 0 || e.type == EventType.MouseDrag && e.button == 0)
+                {
+                    if (isTilesetDone)
+                        Draw();
+                    e.Use();
 
+                }
+                if (e.type == EventType.MouseDown && e.button == 1 || e.type == EventType.MouseDrag && e.button == 1)
+                {
+                    Delete();
+                    e.Use();
+
+                }
             }
+            //show the gui on scene view
+            Handles.BeginGUI();
+            GUI.Label(new Rect(10, Screen.height - 90, 100, 100), "LMB: Draw");
+            GUI.Label(new Rect(10, Screen.height - 105, 100, 100), "RMB: Erase");
+            Handles.EndGUI();
         }
-        //show the gui on scene view
-        Handles.BeginGUI();
-        GUI.Label(new Rect(10, Screen.height - 90, 100, 100), "LMB: Draw");
-        GUI.Label(new Rect(10, Screen.height - 105, 100, 100), "RMB: Erase");
-        Handles.EndGUI();
     }
     // overrides the default GUI for the TileMain script 
     public override void OnInspectorGUI()
@@ -79,8 +90,19 @@ public class TileMainEditor : Editor
         tilemain.showProperties = EditorGUILayout.Foldout(tilemain.showProperties, "Properties");
         if (tilemain.showProperties)
         {
+            checkbool = tilemain.isdrawmode;
             //Create a box layout
             GUILayout.BeginVertical("box");
+            tilemain.isdrawmode = GUILayout.Toggle(tilemain.isdrawmode, "Draw Mode");
+            if (checkbool != tilemain.isdrawmode)
+            {
+                //repaints the Sceneview to show the changes
+                SceneView.RepaintAll();
+                // Set the view tool active
+                Tools.current = Tool.View;
+                //FPS tool is selected
+                Tools.viewTool = ViewTool.FPS;
+            }
             GUILayout.BeginHorizontal();
             //SpriteSheet GUI
             GUILayout.Label("SpriteSheet:");
@@ -107,6 +129,7 @@ public class TileMainEditor : Editor
             //Show/Hide Tiles
                 if (GUILayout.Button(tilebutton) && tilemain.SpriteSheet && isTileGenerated)
                 {
+                    Debug.Log(tilemain.transform.position);
                     if (tilemain.tilesNo > 0)
                     {
                         //Generates the preview Textures from the sprites
@@ -125,9 +148,13 @@ public class TileMainEditor : Editor
                     }
                     else
                         Debug.Log("Must select a texture with sprites.");
-
+                    //If the values in the editor is changed
                     if (GUI.changed)
+                    {
+                        //set the current object as a dirty prefab so it wont lode the default values from the prefab
                         EditorUtility.SetDirty(tilemain);
+                        
+                    }
                 }
             //Show scroll bar For next layout
             scrolepos = GUILayout.BeginScrollView(scrolepos);
@@ -202,15 +229,16 @@ public class TileMainEditor : Editor
     //returns the location of the marker based on mouse on grid position
     private Vector3 MouseOnTile()
     {
-        //convert PixelSize to unity unit 
-        tilesize.x = tilemain.PixelSize.x / 100;
-        tilesize.y = tilemain.PixelSize.y / 100;
+        //converting the mouse hit position to local coordinates
+        Vector2 localmouseHitPos = mouseHitPos -new Vector3(tilemain.transform.position.x, tilemain.transform.position.y, 0);
         // return the column and row values on which the mouse is on
-        tilepos = new Vector3((int)(mouseHitPos.x / tilesize.x), (int)(mouseHitPos.y / tilesize.y),tilemain.Level);
+        tilepos = new Vector3((int)(localmouseHitPos.x / tilesize.x), (int)(localmouseHitPos.y / tilesize.y), tilemain.Level);
         //calculate the marker position based on word coordinates
         Vector2 pos = new Vector2(tilepos.x * tilesize.x, tilepos.y * tilesize.y);
-        //set the marker position value        
-        Vector2 marker = new Vector2(tilemain.transform.position.x, tilemain.transform.position.y) + new Vector2(pos.x + tilesize.x/2, pos.y + tilesize.y/2);
+        //set the marker position value    
+
+        Vector2 marker = new Vector2(pos.x + tilesize.x / 2, pos.y + tilesize.y / 2) + new Vector2(tilemain.transform.position.x, tilemain.transform.position.y);
+       
         return(new Vector3(marker.x,marker.y,(-tilemain.Level)));
                 
 
@@ -219,7 +247,7 @@ public class TileMainEditor : Editor
     void GenerateTiles()
     {
         isTileGenerated = false;
-        //hides the tiles if they are alread shown
+        //hides the tiles if they are already shown
         isTilesetDone = false;
         tilebutton = "Show Tiles";
         //Debug.Log("generate");

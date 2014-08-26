@@ -23,8 +23,10 @@ public class TileMain : MonoBehaviour {
     public GUIStyle texButton;
     //Selection grid
     public int tileGridId;
+    //Draw mode toggle
+    public bool isdrawmode;
     //position of the marker
-    [HideInInspector]
+   // [HideInInspector]
     public Vector3 MarkerPosition;
 
 	// Use this for initialization
@@ -39,32 +41,35 @@ public class TileMain : MonoBehaviour {
     //Drawing the Grid
     void OnDrawGizmosSelected()
     {
-        // store map width, height and position
-        var mapWidth = this.LayerSize.x * this.PixelSize.x/100;
-        var mapHeight = this.LayerSize.y * this.PixelSize.y/100;
-        var position = this.transform.position;
-
-        // draw layer border
-        Gizmos.color = Color.white;
-        Gizmos.DrawLine(position, position + new Vector3(mapWidth, 0, 0));
-        Gizmos.DrawLine(position, position + new Vector3(0, mapHeight, 0));
-        Gizmos.DrawLine(position + new Vector3(mapWidth, 0, 0), position + new Vector3(mapWidth, mapHeight, 0));
-        Gizmos.DrawLine(position + new Vector3(0, mapHeight, 0), position + new Vector3(mapWidth, mapHeight, 0));
-
-        // draw tile cells
-        Gizmos.color = Color.grey;
-        for (float i = 1; i < this.LayerSize.x; i++)
+        //checks if draw mode is on
+        if (isdrawmode)
         {
-            Gizmos.DrawLine(position + new Vector3(i * this.PixelSize.x/100, 0, 0), position + new Vector3(i * this.PixelSize.x/100, mapHeight, 0));
-        }
+            // store map width, height and position
+            var mapWidth = this.LayerSize.x * this.PixelSize.x / 100;
+            var mapHeight = this.LayerSize.y * this.PixelSize.y / 100;
+            var position = this.transform.position;
 
-        for (float i = 1; i < this.LayerSize.y; i++)
-        {
-            Gizmos.DrawLine(position + new Vector3(0, i * this.PixelSize.y/100, 0), position + new Vector3(mapWidth, i * this.PixelSize.y/100, 0));
-        }
-        // Draw marker position
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireCube(this.MarkerPosition, new Vector3(this.PixelSize.x/100, this.PixelSize.y/100, 1) * 1.1f);
+            // draw layer border
+            Gizmos.color = Color.white;
+            Gizmos.DrawLine(position, position + new Vector3(mapWidth, 0, 0));
+            Gizmos.DrawLine(position, position + new Vector3(0, mapHeight, 0));
+            Gizmos.DrawLine(position + new Vector3(mapWidth, 0, 0), position + new Vector3(mapWidth, mapHeight, 0));
+            Gizmos.DrawLine(position + new Vector3(0, mapHeight, 0), position + new Vector3(mapWidth, mapHeight, 0));
 
+            // draw tile cells
+            Gizmos.color = Color.grey;
+            for (float i = 1; i < this.LayerSize.x; i++)
+            {
+                Gizmos.DrawLine(position + new Vector3(i * this.PixelSize.x / 100, 0, 0), position + new Vector3(i * this.PixelSize.x / 100, mapHeight, 0));
+            }
+
+            for (float i = 1; i < this.LayerSize.y; i++)
+            {
+                Gizmos.DrawLine(position + new Vector3(0, i * this.PixelSize.y / 100, 0), position + new Vector3(mapWidth, i * this.PixelSize.y / 100, 0));
+            }
+            // Draw marker position
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireCube(this.MarkerPosition, new Vector3(this.PixelSize.x / 100, this.PixelSize.y / 100, 1) * 1.1f);
+        }
     }
 }
