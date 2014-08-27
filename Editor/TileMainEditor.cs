@@ -24,10 +24,12 @@ public class TileMainEditor : Editor
     private Vector2 scrolepos = Vector2.zero;
     // String for button
     string tilebutton = "Show Tiles";
-    //Check veriable for all bool values
-    public bool checkbool;
-    //starts when scene view is enabled
     
+    //Check variable for all bool values
+    public bool checkbool;
+    //Check variable for all vector2 values
+    public Vector2 checkvector2;
+    //starts when scene view is enabled
     public void OnEnable()
     {
         // Reference to the Tilemain Script
@@ -90,10 +92,11 @@ public class TileMainEditor : Editor
         tilemain.showProperties = EditorGUILayout.Foldout(tilemain.showProperties, "Properties");
         if (tilemain.showProperties)
         {
+            
             checkbool = tilemain.isdrawmode;
             //Create a box layout
             GUILayout.BeginVertical("box");
-            tilemain.isdrawmode = GUILayout.Toggle(tilemain.isdrawmode, "Draw Mode");
+            tilemain.isdrawmode = GUILayout.Toggle(tilemain.isdrawmode, " Draw Mode");
             if (checkbool != tilemain.isdrawmode)
             {
                 //repaints the Sceneview to show the changes
@@ -106,13 +109,21 @@ public class TileMainEditor : Editor
             GUILayout.BeginHorizontal();
             //SpriteSheet GUI
             GUILayout.Label("SpriteSheet:");
-            Undo.RecordObject(tilemain, "TileMain Editor Change");
             tilemain.SpriteSheet = (Texture2D)EditorGUILayout.ObjectField(tilemain.SpriteSheet, typeof(Texture2D),false);
             GUILayout.EndHorizontal();
             //SizeGui
+            checkvector2 = tilemain.PixelSize;
             tilemain.PixelSize = EditorGUILayout.Vector2Field("Pixel Size: ", tilemain.PixelSize);
+            if (checkvector2 != tilemain.PixelSize)
+            {
+                OnEnable();
+            }
             tilemain.LayerSize = EditorGUILayout.Vector2Field("Layer Size: ", tilemain.LayerSize);
             tilemain.Level = EditorGUILayout.FloatField("Level :", tilemain.Level);
+            // Add Collider GUI
+            tilemain.addcollider = GUILayout.Toggle(tilemain.addcollider, " Add Collider (Experimental)");
+            if (tilemain.addcollider)
+                tilemain.coltyp = EditorGUILayout.Popup(tilemain.coltyp, tilemain.collidertype);
             GUILayout.EndVertical();
             //Generate Tiles
             if (GUILayout.Button("Generate Tiles"))
@@ -129,9 +140,10 @@ public class TileMainEditor : Editor
             //Show/Hide Tiles
                 if (GUILayout.Button(tilebutton) && tilemain.SpriteSheet && isTileGenerated)
                 {
-                    Debug.Log(tilemain.transform.position);
+                    
                     if (tilemain.tilesNo > 0)
                     {
+
                         //Generates the preview Textures from the sprites
                         asset = assetPreviewGenerator();
                         if (isTilesetDone == false)
@@ -148,22 +160,24 @@ public class TileMainEditor : Editor
                     }
                     else
                         Debug.Log("Must select a texture with sprites.");
-                    //If the values in the editor is changed
-                    if (GUI.changed)
-                    {
-                        //set the current object as a dirty prefab so it wont lode the default values from the prefab
-                        EditorUtility.SetDirty(tilemain);
-                        
-                    }
+                    
                 }
+
             //Show scroll bar For next layout
             scrolepos = GUILayout.BeginScrollView(scrolepos);
             //if tile preview is generated draw a selection grid with all the tiles generated
             if (isTilesetDone)
                 tilemain.tileGridId = GUILayout.SelectionGrid(tilemain.tileGridId, asset, 6,tilemain.texButton);
-            //Debug.Log(tilemain.tileGridId);
+            
             GUILayout.EndScrollView();
 
+            
+        }
+        //If the values in the editor is changed
+        if (GUI.changed)
+        {
+            //set the current object as a dirty prefab so it wont lode the default values from the prefab
+            EditorUtility.SetDirty(tilemain);
             
         }
     }
@@ -177,7 +191,7 @@ public class TileMainEditor : Editor
         {
             //Store all the images of sprite in the dynamic array
             images[i] = AssetPreview.GetAssetPreview(tilemain.Tiles[i]);
-             //Debug.Log(images[i]);
+             
         }
         return (images);
     }
@@ -185,7 +199,7 @@ public class TileMainEditor : Editor
     private void Draw()
     {
         //Checks if a game object has been already created on that place
-        if (!GameObject.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z)))
+        if (!tilemain.transform.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y, tilepos.z)))
         {
 
             //lets you undo editor changes
@@ -195,30 +209,34 @@ public class TileMainEditor : Editor
             SpriteRenderer renderer = tile.AddComponent<SpriteRenderer>();
             renderer.sprite = tilemain.Tiles[tilemain.tileGridId];
             tile.transform.position = tilemain.MarkerPosition;
+            if (tilemain.addcollider)
+                tile.AddComponent(tilemain.collidertype[tilemain.coltyp]);
             tile.name = string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z);
             tile.transform.parent = tilemain.transform;
             Undo.RegisterCreatedObjectUndo(tile, "Create Tile");
         }
         // checks if a game object is already located on that location,if true change she sprite of that gameobject
-        if (GameObject.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z)))
+        if (tilemain.transform.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y, tilepos.z)))
         {
-            Undo.RecordObject(GameObject.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z)).GetComponent<SpriteRenderer>().sprite, "Change Sprite");
-            GameObject.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z)).GetComponent<SpriteRenderer>().sprite = tilemain.Tiles[tilemain.tileGridId];
+            Undo.RecordObject(tilemain.transform.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y, tilepos.z)).GetComponent<SpriteRenderer>().sprite, "Change Sprite");
+            tilemain.transform.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y, tilepos.z)).GetComponent<SpriteRenderer>().sprite = tilemain.Tiles[tilemain.tileGridId];
         }
     }
     // Delete Function
     private void Delete()
     {
-        if (GameObject.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z)))
+        if (tilemain.transform.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z)))
         {
-            Undo.DestroyObjectImmediate(GameObject.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z)));
+            Undo.IncrementCurrentGroup();
+            Undo.DestroyObjectImmediate(tilemain.transform.Find(string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y, tilepos.z)).gameObject);
+
         }
     }
     // checks if the mouse is on the layer
     private bool IsMouseOnLayer()
     {
         // return true or false depending if the mouse is positioned over the map
-        if (mouseHitPos.x > tilemain.transform.position.x && mouseHitPos.x < (tilemain.transform.position.x + (tilemain.LayerSize.x * tilemain.PixelSize.x / 100)) && mouseHitPos.y > tilemain.transform.position.y && mouseHitPos.y < (tilemain.transform.position.y + (tilemain.LayerSize.y * tilemain.PixelSize.x / 100)))
+        if (mouseHitPos.x > tilemain.transform.position.x && mouseHitPos.x < (tilemain.transform.position.x + (tilemain.LayerSize.x * tilemain.PixelSize.x / 100)) && mouseHitPos.y > tilemain.transform.position.y && mouseHitPos.y < (tilemain.transform.position.y + (tilemain.LayerSize.y * tilemain.PixelSize.y / 100)))
         {
             
             return (true);
@@ -230,7 +248,7 @@ public class TileMainEditor : Editor
     private Vector3 MouseOnTile()
     {
         //converting the mouse hit position to local coordinates
-        Vector2 localmouseHitPos = mouseHitPos -new Vector3(tilemain.transform.position.x, tilemain.transform.position.y, 0);
+        Vector2 localmouseHitPos = mouseHitPos - new Vector3(tilemain.transform.position.x, tilemain.transform.position.y, 0);
         // return the column and row values on which the mouse is on
         tilepos = new Vector3((int)(localmouseHitPos.x / tilesize.x), (int)(localmouseHitPos.y / tilesize.y), tilemain.Level);
         //calculate the marker position based on word coordinates
@@ -250,14 +268,13 @@ public class TileMainEditor : Editor
         //hides the tiles if they are already shown
         isTilesetDone = false;
         tilebutton = "Show Tiles";
-        //Debug.Log("generate");
-       // Debug.Log(AssetDatabase.GetAssetPath(tilemain.SpriteSheet));
+       
         //location of SpriteSheet
         string path = AssetDatabase.GetAssetPath(tilemain.SpriteSheet);
         //dyanamic array to store the sprites and fill it with sprites
         object[] objs;
         objs = AssetDatabase.LoadAllAssetsAtPath(path);
-        //Debug.Log(objs.Length);
+       
         tilemain.tilesNo = objs.Length - 1;
         if (tilemain.tilesNo > 0)
         {

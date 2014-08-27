@@ -25,6 +25,12 @@ public class TileMain : MonoBehaviour {
     public int tileGridId;
     //Draw mode toggle
     public bool isdrawmode;
+    //Bool for adding collider or not
+    public bool addcollider;
+    //collider type
+    public string[] collidertype = new string[3]{"BoxCollider2D","CircleCollider2D","PolygonCollider2D"};
+    //int for collider type
+    public int coltyp;
     //position of the marker
    // [HideInInspector]
     public Vector3 MarkerPosition;
