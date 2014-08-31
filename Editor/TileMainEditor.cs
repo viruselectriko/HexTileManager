@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections;
+using System.IO;
 
 
 [CustomEditor(typeof(TileMain))]
@@ -14,28 +15,30 @@ public class TileMainEditor : Editor
     private Vector2 tilesize;
     // Tile position based on mouselocation
     private Vector3 tilepos;
-    // array of textures for sprites
-    Texture2D[] asset;
     //bool to check if tile selection grid is hidden or not
     public bool isTilesetDone = false;
-    //Checks if tile is generated or not
-    public bool isTileGenerated = false;
     // Scrolebar position
     private Vector2 scrolepos = Vector2.zero;
     // String for button
     string tilebutton = "Show Tiles";
-    
+    //Checks for Texture2D changes
+    public Texture2D checktexture2d;
     //Check variable for all bool values
     public bool checkbool;
     //Check variable for all vector2 values
     public Vector2 checkvector2;
+    //Check variable for int values
+    public int checkint;
     //starts when scene view is enabled
     public void OnEnable()
     {
         // Reference to the Tilemain Script
         tilemain = (TileMain)target;
-        tilesize.x = tilemain.PixelSize.x / 100;
-        tilesize.y = tilemain.PixelSize.y / 100;
+        tilesize.x = tilemain.PixelSize.x / tilemain.pixeltounit;
+        tilesize.y = tilemain.PixelSize.y / tilemain.pixeltounit;
+        //Debug.Log(tilemain.Tiles[0].textureRect.height / tilemain.Tiles[0].bounds.size.y);
+        
+        
     }
     //All the work happinning in Scene view
     void OnSceneGUI()
@@ -92,7 +95,7 @@ public class TileMainEditor : Editor
         tilemain.showProperties = EditorGUILayout.Foldout(tilemain.showProperties, "Properties");
         if (tilemain.showProperties)
         {
-            
+
             checkbool = tilemain.isdrawmode;
             //Create a box layout
             GUILayout.BeginVertical("box");
@@ -108,9 +111,27 @@ public class TileMainEditor : Editor
             }
             GUILayout.BeginHorizontal();
             //SpriteSheet GUI
-            GUILayout.Label("SpriteSheet:");
-            tilemain.SpriteSheet = (Texture2D)EditorGUILayout.ObjectField(tilemain.SpriteSheet, typeof(Texture2D),false);
+            GUILayout.Label("SpriteSheet: ");
+            checktexture2d = tilemain.SpriteSheet;
+            tilemain.SpriteSheet = (Texture2D)EditorGUILayout.ObjectField(tilemain.SpriteSheet, typeof(Texture2D), false);
+
             GUILayout.EndHorizontal();
+            if (checktexture2d != tilemain.SpriteSheet)
+            {
+                //Generate Tiles
+                if (tilemain.SpriteSheet)
+                {
+                    GenerateTiles();
+
+                }
+            }
+            GUILayout.BeginHorizontal();
+            checkint = tilemain.pixeltounit;
+            GUILayout.Label("Pixel To Unit:");
+            tilemain.pixeltounit = EditorGUILayout.IntField(tilemain.pixeltounit);
+            GUILayout.EndHorizontal();
+            if (checkint != tilemain.pixeltounit)
+                OnEnable();
             //SizeGui
             checkvector2 = tilemain.PixelSize;
             tilemain.PixelSize = EditorGUILayout.Vector2Field("Pixel Size: ", tilemain.PixelSize);
@@ -125,27 +146,18 @@ public class TileMainEditor : Editor
             if (tilemain.addcollider)
                 tilemain.coltyp = EditorGUILayout.Popup(tilemain.coltyp, tilemain.collidertype);
             GUILayout.EndVertical();
-            //Generate Tiles
-            if (GUILayout.Button("Generate Tiles"))
-            {
-                if (tilemain.SpriteSheet)
-                    GenerateTiles();
-                else
-                    Debug.Log("Must select a texture with sprites.");
-            }
-
+        }
            //Tiles GUI
             EditorGUILayout.LabelField("Tiles", EditorStyles.boldLabel);
 
             //Show/Hide Tiles
-                if (GUILayout.Button(tilebutton) && tilemain.SpriteSheet && isTileGenerated)
+                if (GUILayout.Button(tilebutton) && tilemain.SpriteSheet && tilemain.isTileGenerated)
                 {
-                    
+
                     if (tilemain.tilesNo > 0)
                     {
 
-                        //Generates the preview Textures from the sprites
-                        asset = assetPreviewGenerator();
+                        
                         if (isTilesetDone == false)
                         {
                             isTilesetDone = true;
@@ -156,23 +168,27 @@ public class TileMainEditor : Editor
                             isTilesetDone = false;
                             tilebutton = "Show Tiles";
                         }
-                        
+
                     }
                     else
+                    {
+                        isTilesetDone = false;
                         Debug.Log("Must select a texture with sprites.");
-                    
+                    }
                 }
 
             //Show scroll bar For next layout
             scrolepos = GUILayout.BeginScrollView(scrolepos);
             //if tile preview is generated draw a selection grid with all the tiles generated
             if (isTilesetDone)
-                tilemain.tileGridId = GUILayout.SelectionGrid(tilemain.tileGridId, asset, 6,tilemain.texButton);
-            
+            {
+                tilemain.tileGridId = GUILayout.SelectionGrid(tilemain.tileGridId, tilemain.asset, 6, tilemain.texButton);
+             
+            }
             GUILayout.EndScrollView();
 
             
-        }
+        
         //If the values in the editor is changed
         if (GUI.changed)
         {
@@ -182,18 +198,42 @@ public class TileMainEditor : Editor
         }
     }
     //Generation function for asset texture from an array of sprites
-    public Texture2D[] assetPreviewGenerator()
+    public void assetPreviewGenerator()
     {
-        //Create a dynamic array with the number of sprites generated  
-        Texture2D[] images = new Texture2D[tilemain.tilesNo];
-
+         
         for (int i = 0; i < tilemain.tilesNo; i++)
         {
-            //Store all the images of sprite in the dynamic array
-            images[i] = AssetPreview.GetAssetPreview(tilemain.Tiles[i]);
-             
+            
+            //Store all the images of sprite in a dynamic array
+            if (!tilemain.asset[i])
+            {
+                //try catch block to catch exception for texture not readable error due to fast execution.
+                try
+                {
+                    //get the tiles rect then create an blank texture thn populate that blank texture with the image of the tile.
+                    Rect rect = tilemain.Tiles[i].rect;
+                    tilemain.asset[i] = new Texture2D((int)rect.width, (int)rect.height);
+                    Color[] pixels = tilemain.SpriteSheet.GetPixels((int)rect.x, (int)rect.y, (int)rect.width, (int)rect.height);
+                    tilemain.asset[i].SetPixels(pixels);
+                    tilemain.asset[i].Apply();
+                }
+                //if the exception occur generate the tiles again.
+                catch(UnityException e)
+                {
+                    if(e.Message.StartsWith("Texture '" + tilemain.SpriteSheet.name + "' is not readable"))
+                    {
+                        GenerateTiles();
+                    }
+                }
+                   
+                    
+                 
+            }
+           
+            
         }
-        return (images);
+        
+        
     }
     // Drawing function
     private void Draw()
@@ -236,7 +276,7 @@ public class TileMainEditor : Editor
     private bool IsMouseOnLayer()
     {
         // return true or false depending if the mouse is positioned over the map
-        if (mouseHitPos.x > tilemain.transform.position.x && mouseHitPos.x < (tilemain.transform.position.x + (tilemain.LayerSize.x * tilemain.PixelSize.x / 100)) && mouseHitPos.y > tilemain.transform.position.y && mouseHitPos.y < (tilemain.transform.position.y + (tilemain.LayerSize.y * tilemain.PixelSize.y / 100)))
+        if (mouseHitPos.x > tilemain.transform.position.x && mouseHitPos.x < (tilemain.transform.position.x + (tilemain.LayerSize.x * tilemain.PixelSize.x / tilemain.pixeltounit)) && mouseHitPos.y > tilemain.transform.position.y && mouseHitPos.y < (tilemain.transform.position.y + (tilemain.LayerSize.y * tilemain.PixelSize.y / tilemain.pixeltounit)))
         {
             
             return (true);
@@ -264,28 +304,35 @@ public class TileMainEditor : Editor
     // genaration of the tile from tile map
     void GenerateTiles()
     {
-        isTileGenerated = false;
+        tilemain.isTileGenerated = false;
         //hides the tiles if they are already shown
         isTilesetDone = false;
         tilebutton = "Show Tiles";
-       
+        tilemain.Tiles.Clear();
         //location of SpriteSheet
         string path = AssetDatabase.GetAssetPath(tilemain.SpriteSheet);
+        TextureImporter A = (TextureImporter)AssetImporter.GetAtPath(path);
+        //change the texture isReadable flag to true and reimport the asset
+        A.isReadable = true;
+        AssetDatabase.ImportAsset(path);
         //dyanamic array to store the sprites and fill it with sprites
         object[] objs;
         objs = AssetDatabase.LoadAllAssetsAtPath(path);
        
         tilemain.tilesNo = objs.Length - 1;
+        tilemain.asset = new Texture2D[tilemain.tilesNo];
         if (tilemain.tilesNo > 0)
         {
             //Storing Tiles as Sprites
             for (int i = 1; i <= objs.Length - 1; i++)
             {
-                tilemain.Tiles[i - 1] = (Sprite)objs[i];
-                // tilemain.tilesTexture[i - 1] = AssetPreview.GetAssetPreview(tilemain.Tiles[i-1]);
+                tilemain.Tiles.Add((Sprite)objs[i]);
+                
             }
-            asset = assetPreviewGenerator();
-            isTileGenerated = true;
+            //generate the tiles preview
+            assetPreviewGenerator();
+            tilemain.isTileGenerated = true;
+            Debug.Log("New Tiles Generated");
         }
         else
             Debug.Log("Must select a texture with sprites.");

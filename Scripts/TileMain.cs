@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class TileMain : MonoBehaviour {
 
@@ -15,10 +16,12 @@ public class TileMain : MonoBehaviour {
     public bool showProperties = true;
     //No. of elements in array
     public int tilesNo;
-    //Tiles array
-    public Sprite[] Tiles = new Sprite[100];
-    //Texture array
-    //public Texture2D[] tilesTexture = new Texture2D[37];
+    //Tiles list
+    public List<Sprite> Tiles = new List<Sprite>();
+    //Checks if tile is generated or not
+    public bool isTileGenerated = false;
+    // array of textures for sprites
+    public Texture2D[] asset;
     //GuiStyle
     public GUIStyle texButton;
     //Selection grid
@@ -31,6 +34,8 @@ public class TileMain : MonoBehaviour {
     public string[] collidertype = new string[3]{"BoxCollider2D","CircleCollider2D","PolygonCollider2D"};
     //int for collider type
     public int coltyp;
+    //Pixel to Unit
+    public int pixeltounit = 100;
     //position of the marker
    // [HideInInspector]
     public Vector3 MarkerPosition;
@@ -51,8 +56,8 @@ public class TileMain : MonoBehaviour {
         if (isdrawmode)
         {
             // store map width, height and position
-            var mapWidth = this.LayerSize.x * this.PixelSize.x / 100;
-            var mapHeight = this.LayerSize.y * this.PixelSize.y / 100;
+            var mapWidth = this.LayerSize.x * this.PixelSize.x / pixeltounit;
+            var mapHeight = this.LayerSize.y * this.PixelSize.y / pixeltounit;
             var position = this.transform.position;
 
             // draw layer border
@@ -66,16 +71,16 @@ public class TileMain : MonoBehaviour {
             Gizmos.color = Color.grey;
             for (float i = 1; i < this.LayerSize.x; i++)
             {
-                Gizmos.DrawLine(position + new Vector3(i * this.PixelSize.x / 100, 0, 0), position + new Vector3(i * this.PixelSize.x / 100, mapHeight, 0));
+                Gizmos.DrawLine(position + new Vector3(i * this.PixelSize.x / pixeltounit, 0, 0), position + new Vector3(i * this.PixelSize.x / pixeltounit, mapHeight, 0));
             }
 
             for (float i = 1; i < this.LayerSize.y; i++)
             {
-                Gizmos.DrawLine(position + new Vector3(0, i * this.PixelSize.y / 100, 0), position + new Vector3(mapWidth, i * this.PixelSize.y / 100, 0));
+                Gizmos.DrawLine(position + new Vector3(0, i * this.PixelSize.y / pixeltounit, 0), position + new Vector3(mapWidth, i * this.PixelSize.y / pixeltounit, 0));
             }
             // Draw marker position
             Gizmos.color = Color.red;
-            Gizmos.DrawWireCube(this.MarkerPosition, new Vector3(this.PixelSize.x / 100, this.PixelSize.y / 100, 1) * 1.1f);
+            Gizmos.DrawWireCube(this.MarkerPosition, new Vector3(this.PixelSize.x / pixeltounit, this.PixelSize.y / pixeltounit, 1) * 1.1f);
         }
     }
 }
