@@ -143,6 +143,8 @@ public class TileMainEditor : Editor
             tilemain.Level = EditorGUILayout.FloatField("Level :", tilemain.Level);
             // Add Collider GUI
             tilemain.addcollider = GUILayout.Toggle(tilemain.addcollider, " Add Collider (Experimental)");
+             // Add Rigidbody GUI
+            tilemain.addRigidbody = GUILayout.Toggle(tilemain.addRigidbody, " Add Rigidbody (Experimental)");
             if (tilemain.addcollider)
                 tilemain.coltyp = EditorGUILayout.Popup(tilemain.coltyp, tilemain.collidertype);
             GUILayout.EndVertical();
@@ -251,6 +253,8 @@ public class TileMainEditor : Editor
             tile.transform.position = tilemain.MarkerPosition;
             if (tilemain.addcollider)
                 tile.AddComponent(tilemain.collidertype[tilemain.coltyp]);
+            if (tilemain.addRigidbody)
+                tile.AddComponent<Rigidbody2D>();
             tile.name = string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z);
             tile.transform.parent = tilemain.transform;
             Undo.RegisterCreatedObjectUndo(tile, "Create Tile");
