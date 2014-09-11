@@ -36,6 +36,8 @@ public class TileMain : MonoBehaviour {
     public string[] collidertype = new string[3]{"BoxCollider2D","CircleCollider2D","PolygonCollider2D"};
     //int for collider type
     public int coltyp;
+    //bool for chosing layer of the tile
+    public bool choseLayer;
     //Pixel to Unit
     public int pixeltounit = 100;
     //position of the marker
