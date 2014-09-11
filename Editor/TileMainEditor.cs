@@ -29,6 +29,8 @@ public class TileMainEditor : Editor
     public Vector2 checkvector2;
     //Check variable for int values
     public int checkint;
+    //int for selected layer
+     private int selectedLayer=0;
     //starts when scene view is enabled
     public void OnEnable()
     {
@@ -143,10 +145,16 @@ public class TileMainEditor : Editor
             tilemain.Level = EditorGUILayout.FloatField("Level :", tilemain.Level);
             // Add Collider GUI
             tilemain.addcollider = GUILayout.Toggle(tilemain.addcollider, " Add Collider (Experimental)");
-             // Add Rigidbody GUI
-            tilemain.addRigidbody = GUILayout.Toggle(tilemain.addRigidbody, " Add Rigidbody (Experimental)");
             if (tilemain.addcollider)
                 tilemain.coltyp = EditorGUILayout.Popup(tilemain.coltyp, tilemain.collidertype);
+            // Add Rigidbody GUI
+            tilemain.addRigidbody = GUILayout.Toggle(tilemain.addRigidbody, " Add Rigidbody (Experimental)");
+            // Chose layer GUI
+            tilemain.choseLayer = GUILayout.Toggle(tilemain.choseLayer, " Chose Layer (Experimental)");
+            if (tilemain.choseLayer) {
+                selectedLayer = EditorGUILayout.LayerField("Layer for Objects:", selectedLayer);
+              
+            }
             GUILayout.EndVertical();
         }
            //Tiles GUI
@@ -255,6 +263,7 @@ public class TileMainEditor : Editor
                 tile.AddComponent(tilemain.collidertype[tilemain.coltyp]);
             if (tilemain.addRigidbody)
                 tile.AddComponent<Rigidbody2D>();
+            if (tilemain.choseLayer) tile.layer = selectedLayer;
             tile.name = string.Format("Tile_{0}_{1}_{2}", tilepos.x, tilepos.y,tilepos.z);
             tile.transform.parent = tilemain.transform;
             Undo.RegisterCreatedObjectUndo(tile, "Create Tile");
